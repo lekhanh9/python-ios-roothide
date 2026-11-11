@@ -40,6 +40,7 @@ printf 'Preparing the host Python and Apple dependencies...\n'
 (
     cd "$SOURCE_DIR"
     python3 Apple/__main__.py build iOS build
+    python3 Apple/__main__.py configure-host iOS arm64-apple-ios
 )
 
 # A subshell keeps each build's paths and configuration separate.
@@ -52,7 +53,6 @@ build_package() (
             MIN_IOS=13.0
             EXTRA_CFLAGS=""
             EXTRA_LDFLAGS=""
-            HOST_TRIPLE="arm64-apple-ios"
             ;;
         rootless)
             INSTALL_PREFIX=/var/jb/usr/local
@@ -60,7 +60,6 @@ build_package() (
             MIN_IOS=15.0
             EXTRA_CFLAGS=""
             EXTRA_LDFLAGS=""
-            HOST_TRIPLE="arm64-apple-ios"
             ;;
         roothide)
             INSTALL_PREFIX=/usr/local
@@ -68,10 +67,10 @@ build_package() (
             MIN_IOS=15.0
             EXTRA_CFLAGS="-arch arm64e"
             EXTRA_LDFLAGS="-arch arm64e"
-            HOST_TRIPLE="arm64e-apple-ios"
             ;;
     esac
 
+    HOST_TRIPLE="arm64-apple-ios"
     DEPS_PREFIX="$HOST_BUILD_DIR/$HOST_TRIPLE/prefix"
     FRAMEWORK_PREFIX="$INSTALL_PREFIX/Frameworks"
     BUILD_DIR=$(mktemp -d "$WORK_DIR/$SCHEME.XXXXXX")
@@ -79,12 +78,6 @@ build_package() (
     PACKAGE_ROOT="$BUILD_DIR/package-root"
     mkdir -p "$TARGET_DIR" "$PACKAGE_ROOT"
     printf 'Building the %s package...\n' "$SCHEME"
-
-    # Configure host dependencies for this architecture.
-    (
-        cd "$SOURCE_DIR"
-        python3 Apple/__main__.py configure-host iOS "$HOST_TRIPLE"
-    )
 
     # Build and stage the iOS framework.
     printf 'Configuring CPython with Python.framework...\n'
