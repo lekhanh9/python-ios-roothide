@@ -3,6 +3,7 @@ name: Build CPython framework for iOS
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,7 +17,7 @@ jobs:
           persist-credentials: false
       - name: Install Debian packaging tools
         run: brew install dpkg
-      - name: Build rootful and rootless packages
+      - name: Build rootful, rootless, and roothide packages
         run: ./scripts/build.sh
       - name: Upload rootful package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -28,5 +29,11 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           path: dist/*_iphoneos-arm64.deb
+          archive: false
+          if-no-files-found: error
+      - name: Upload roothide package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/*_iphoneos-arm64e.deb
           archive: false
           if-no-files-found: error

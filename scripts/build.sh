@@ -2,9 +2,9 @@
 set -eu
 
 case "$*" in
-    ""|all) set -- rootful rootless ;;
-    rootful|rootless) ;;
-    *) printf 'usage: %s [rootful|rootless|all]\n' "$0" >&2; exit 2 ;;
+    ""|all) set -- rootful rootless roothide ;;
+    rootful|rootless|roothide) ;;
+    *) printf 'usage: %s [rootful|rootless|roothide|all]\n' "$0" >&2; exit 2 ;;
 esac
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
@@ -51,11 +51,22 @@ build_package() (
             INSTALL_PREFIX=/usr/local
             ARCHITECTURE=iphoneos-arm
             MIN_IOS=13.0
+            EXTRA_CFLAGS=""
+            EXTRA_LDFLAGS=""
             ;;
         rootless)
             INSTALL_PREFIX=/var/jb/usr/local
             ARCHITECTURE=iphoneos-arm64
             MIN_IOS=15.0
+            EXTRA_CFLAGS=""
+            EXTRA_LDFLAGS=""
+            ;;
+        roothide)
+            INSTALL_PREFIX=/usr/local
+            ARCHITECTURE=iphoneos-arm64e
+            MIN_IOS=15.0
+            EXTRA_CFLAGS="-arch arm64e"
+            EXTRA_LDFLAGS="-arch arm64e"
             ;;
     esac
 
@@ -80,7 +91,8 @@ build_package() (
             --enable-framework="$FRAMEWORK_PREFIX" \
             --with-openssl="$DEPS_PREFIX" \
             --disable-test-modules \
-            LDFLAGS="-Wl,-rpath,$FRAMEWORK_PREFIX" \
+            CFLAGS="$EXTRA_CFLAGS" \
+            LDFLAGS="-Wl,-rpath,$FRAMEWORK_PREFIX $EXTRA_LDFLAGS" \
             LIBS="-Wl,-needed_framework,UIKit" \
             LIBMPDEC_CFLAGS="-I$DEPS_PREFIX/include" \
             LIBMPDEC_LIBS="-L$DEPS_PREFIX/lib -lmpdec" \
