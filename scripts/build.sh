@@ -70,6 +70,11 @@ build_package() (
     printf 'Preparing host Python and dependencies for %s...\n' "$SCHEME"
     (
         cd "$SCHEME_SOURCE_DIR"
+        if [ -n "$EXTRA_CFLAGS" ]; then
+            export CFLAGS="$EXTRA_CFLAGS"
+            export CXXFLAGS="$EXTRA_CFLAGS"
+            export LDFLAGS="$EXTRA_LDFLAGS"
+        fi
         python3 Apple/__main__.py build iOS build
         python3 Apple/__main__.py configure-host iOS arm64-apple-ios
     )
@@ -95,9 +100,12 @@ build_package() (
         )
         if [ -n "$EXTRA_CFLAGS" ]; then
             CONFIG_ARGS=("${CONFIG_ARGS[@]}" "CFLAGS=$EXTRA_CFLAGS")
+            export CFLAGS="$EXTRA_CFLAGS"
+            export CXXFLAGS="$EXTRA_CFLAGS"
         fi
         if [ -n "$EXTRA_LDFLAGS" ]; then
             LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX $EXTRA_LDFLAGS"
+            export LDFLAGS="$LDFLAGS_VAL"
         else
             LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX"
         fi
