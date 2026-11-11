@@ -17,6 +17,8 @@ jobs:
           persist-credentials: false
       - name: Install Debian packaging tools
         run: brew install dpkg
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app && xcodebuild -version
       - name: Build rootful, rootless, and roothide packages
         run: ./scripts/build.sh
       - name: Upload rootful package
