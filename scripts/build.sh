@@ -22,26 +22,13 @@ WORK_DIR=$(CDPATH= cd -- "$WORK_DIR" && pwd)
 OUTPUT_DIR=$(CDPATH= cd -- "$OUTPUT_DIR" && pwd)
 
 SOURCE_ARCHIVE="$WORK_DIR/Python-$VERSION.tar.xz"
-SOURCE_DIR="$WORK_DIR/Python-$VERSION"
-HOST_BUILD_DIR="$SOURCE_DIR/cross-build"
-DEPS_PREFIX="$HOST_BUILD_DIR/arm64-apple-ios/prefix"
-BUILD_PYTHON="$HOST_BUILD_DIR/build/python.exe"
 
-# Download and verify CPython before extracting it.
+# Download and verify CPython archive once.
 printf 'Downloading CPython %s...\n' "$VERSION"
 curl --fail --location --retry 3 \
     --output "$SOURCE_ARCHIVE" \
     "https://www.python.org/ftp/python/$VERSION/Python-$VERSION.tar.xz"
 printf '%s  %s\n' "$SOURCE_SHA256" "$SOURCE_ARCHIVE" | shasum -a 256 -c -
-tar -xJf "$SOURCE_ARCHIVE" -C "$WORK_DIR"
-
-# Build the host interpreter and fetch the Apple dependencies.
-printf 'Preparing the host Python and Apple dependencies...\n'
-(
-    cd "$SOURCE_DIR"
-    python3 Apple/__main__.py build iOS build
-    python3 Apple/__main__.py configure-host iOS arm64-apple-ios
-)
 
 # A subshell keeps each build's paths and configuration separate.
 build_package() (
@@ -70,20 +57,32 @@ build_package() (
             ;;
     esac
 
-    HOST_TRIPLE="arm64-apple-ios"
-    DEPS_PREFIX="$HOST_BUILD_DIR/$HOST_TRIPLE/prefix"
-    FRAMEWORK_PREFIX="$INSTALL_PREFIX/Frameworks"
     BUILD_DIR=$(mktemp -d "$WORK_DIR/$SCHEME.XXXXXX")
+    SCHEME_SOURCE_DIR="$BUILD_DIR/Python-$VERSION"
     TARGET_DIR="$BUILD_DIR/target"
     PACKAGE_ROOT="$BUILD_DIR/package-root"
     mkdir -p "$TARGET_DIR" "$PACKAGE_ROOT"
-    printf 'Building the %s package...\n' "$SCHEME"
 
-    # Build and stage the iOS framework.
-    printf 'Configuring CPython with Python.framework...\n'
+    printf 'Extracting CPython for %s...\n' "$SCHEME"
+    tar -xJf "$SOURCE_ARCHIVE" -C "$BUILD_DIR"
+
+    # Build host interpreter and dependencies for this scheme.
+    printf 'Preparing host Python and dependencies for %s...\n' "$SCHEME"
+    (
+        cd "$SCHEME_SOURCE_DIR"
+        python3 Apple/__main__.py build iOS build
+        python3 Apple/__main__.py configure-host iOS arm64-apple-ios
+    )
+
+    HOST_TRIPLE="arm64-apple-ios"
+    DEPS_PREFIX="$SCHEME_SOURCE_DIR/cross-build/$HOST_TRIPLE/prefix"
+    BUILD_PYTHON="$SCHEME_SOURCE_DIR/cross-build/build/python.exe"
+    FRAMEWORK_PREFIX="$INSTALL_PREFIX/Frameworks"
+
+    printf 'Building the %s package...\n' "$SCHEME"
     (
         cd "$TARGET_DIR"
-        PATH="$SOURCE_DIR/Apple/iOS/Resources/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"
+        PATH="$SCHEME_SOURCE_DIR/Apple/iOS/Resources/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"
         export PATH
 
         CONFIG_ARGS=(
@@ -103,7 +102,7 @@ build_package() (
             LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX"
         fi
 
-        "$SOURCE_DIR/configure" \
+        "$SCHEME_SOURCE_DIR/configure" \
             "${CONFIG_ARGS[@]}" \
             LDFLAGS="$LDFLAGS_VAL" \
             LIBS="-Wl,-needed_framework,UIKit" \
@@ -133,7 +132,7 @@ build_package() (
     ln -s "python$PYTHON_VERSION" "$BIN_DIR/python"
 
     # Use the host interpreter: the iOS executable cannot run during the build.
-    set -- "$SOURCE_DIR"/Lib/ensurepip/_bundled/pip-*.whl
+    set -- "$SCHEME_SOURCE_DIR"/Lib/ensurepip/_bundled/pip-*.whl
     PYTHONPATH="$1" "$BUILD_PYTHON" -m pip install \
         --no-index \
         --no-deps \
