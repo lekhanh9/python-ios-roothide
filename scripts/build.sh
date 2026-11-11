@@ -84,15 +84,26 @@ build_package() (
         PATH="$SOURCE_DIR/Apple/iOS/Resources/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Library/Apple/usr/bin"
         export PATH
 
+        CONFIG_ARGS=(
+            --host=arm64-apple-ios
+            --build="$(uname -m)-apple-darwin"
+            --with-build-python="$BUILD_PYTHON"
+            --enable-framework="$FRAMEWORK_PREFIX"
+            --with-openssl="$DEPS_PREFIX"
+            --disable-test-modules
+        )
+        if [ -n "$EXTRA_CFLAGS" ]; then
+            CONFIG_ARGS=("${CONFIG_ARGS[@]}" "CFLAGS=$EXTRA_CFLAGS")
+        fi
+        if [ -n "$EXTRA_LDFLAGS" ]; then
+            LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX $EXTRA_LDFLAGS"
+        else
+            LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX"
+        fi
+
         "$SOURCE_DIR/configure" \
-            --host=arm64-apple-ios \
-            --build="$(uname -m)-apple-darwin" \
-            --with-build-python="$BUILD_PYTHON" \
-            --enable-framework="$FRAMEWORK_PREFIX" \
-            --with-openssl="$DEPS_PREFIX" \
-            --disable-test-modules \
-            CFLAGS="$EXTRA_CFLAGS" \
-            LDFLAGS="-Wl,-rpath,$FRAMEWORK_PREFIX $EXTRA_LDFLAGS" \
+            "${CONFIG_ARGS[@]}" \
+            LDFLAGS="$LDFLAGS_VAL" \
             LIBS="-Wl,-needed_framework,UIKit" \
             LIBMPDEC_CFLAGS="-I$DEPS_PREFIX/include" \
             LIBMPDEC_LIBS="-L$DEPS_PREFIX/lib -lmpdec" \
