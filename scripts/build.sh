@@ -156,10 +156,10 @@ build_package() (
         install_name_tool -add_rpath "@loader_path/../Frameworks" "$PYTHON_BIN" 2>/dev/null || true
         install_name_tool -id "@rpath/Python.framework/Python" "$PYTHON_FRAMEWORK/Python" 2>/dev/null || true
     fi
-    codesign --force --sign - "$PYTHON_BIN"
-    codesign --force --sign - "$PYTHON_FRAMEWORK"
+    ldid -S "$PYTHON_BIN"
+    ldid -S "$PYTHON_FRAMEWORK/Python"
     find "$DYNLOAD_DIR" -type f -name '*.so' -exec sh -ec '
-        for binary do codesign --force --sign - "$binary"; done
+        for binary do ldid -S "$binary"; done
     ' sh {} +
 
     # Add Debian metadata directly to the staged installation.
