@@ -70,6 +70,7 @@ build_package() (
     printf 'Preparing host Python and dependencies for %s...\n' "$SCHEME"
     (
         cd "$SCHEME_SOURCE_DIR"
+        unset SDKROOT || true
         python3 Apple/__main__.py build iOS build
         python3 Apple/__main__.py configure-host iOS arm64-apple-ios
     )
