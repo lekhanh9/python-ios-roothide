@@ -1,4 +1,4 @@
-name: Build CPython framework for iOS
+name: Build Roothide CPython for iOS
 
 on:
   push:
@@ -19,20 +19,8 @@ jobs:
         run: brew install dpkg
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app && xcodebuild -version
-      - name: Build rootful, rootless, and roothide packages
-        run: ./scripts/build.sh
-      - name: Upload rootful package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          path: dist/*_iphoneos-arm.deb
-          archive: false
-          if-no-files-found: error
-      - name: Upload rootless package
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          path: dist/*_iphoneos-arm64.deb
-          archive: false
-          if-no-files-found: error
+      - name: Build roothide package
+        run: ./scripts/build.sh roothide
       - name: Upload roothide package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
