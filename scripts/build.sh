@@ -50,7 +50,7 @@ build_package() (
             ;;
         roothide)
             INSTALL_PREFIX=/usr/local
-            ARCHITECTURE=iphoneos-arm64e
+            ARCHITECTURE=iphoneos-arm64
             MIN_IOS=15.0
             EXTRA_CFLAGS=""
             EXTRA_LDFLAGS=""
