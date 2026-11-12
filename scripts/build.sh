@@ -52,8 +52,8 @@ build_package() (
             INSTALL_PREFIX=/usr/local
             ARCHITECTURE=iphoneos-arm64e
             MIN_IOS=15.0
-            EXTRA_CFLAGS="-arch arm64 -arch arm64e"
-            EXTRA_LDFLAGS="-arch arm64 -arch arm64e"
+            EXTRA_CFLAGS="-arch arm64e"
+            EXTRA_LDFLAGS="-arch arm64e"
             ;;
     esac
 
