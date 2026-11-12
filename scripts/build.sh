@@ -96,7 +96,9 @@ build_package() (
         if [ -n "$EXTRA_CFLAGS" ]; then
             CONFIG_ARGS=("${CONFIG_ARGS[@]}" "CFLAGS=$EXTRA_CFLAGS")
         fi
-        if [ -n "$EXTRA_LDFLAGS" ]; then
+        if [ "$SCHEME" = "roothide" ]; then
+            LDFLAGS_VAL="-Wl,-rpath,@loader_path/../Frameworks -Wl,-rpath,$FRAMEWORK_PREFIX $EXTRA_LDFLAGS"
+        elif [ -n "$EXTRA_LDFLAGS" ]; then
             LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX $EXTRA_LDFLAGS"
         else
             LDFLAGS_VAL="-Wl,-rpath,$FRAMEWORK_PREFIX"
@@ -149,6 +151,10 @@ build_package() (
     # Strip before signing so the signatures remain valid.
     strip -x "$PYTHON_BIN"
     strip -x "$PYTHON_FRAMEWORK/Python"
+    if [ "$SCHEME" = "roothide" ]; then
+        install_name_tool -add_rpath "@loader_path/../Frameworks" "$PYTHON_BIN" 2>/dev/null || true
+        install_name_tool -id "@rpath/Python.framework/Python" "$PYTHON_FRAMEWORK/Python" 2>/dev/null || true
+    fi
     codesign --force --sign - "$PYTHON_BIN"
     codesign --force --sign - "$PYTHON_FRAMEWORK"
     find "$DYNLOAD_DIR" -type f -name '*.so' -exec sh -ec '
